@@ -1,0 +1,17 @@
+---
+# Debian/Ubuntu specific variables
+fail2ban_packages:
+  - fail2ban
+  - iptables
+
+fail2ban_service_name: "fail2ban"
+fail2ban_config_dir: "/etc/fail2ban"
+fail2ban_jail_local: "/etc/fail2ban/jail.local"
+
+# Log paths for Debian/Ubuntu
+fail2ban_log_paths:
+  ssh: "/var/log/auth.log"
+  nginx: "/var/log/nginx/error.log"
+  apache: "/var/log/apache2/error.log"
+  vsftpd: "/var/log/vsftpd.log"
+  proftpd: "/var/log/proftpd/proftpd.log"

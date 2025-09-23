@@ -1,0 +1,43 @@
+---
+
+- name: Update package cache (Debian/Ubuntu)
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Update package cache (RedHat/CentOS)
+  yum:
+    update_cache: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags:
+    - fail2ban
+
+- name: Install required packages
+  package:
+    name: "{{ fail2ban_packages }}"
+    state: present
+  tags:
+    - fail2ban
+
+- name: Detect installed services
+  import_tasks: detect_services.yml
+  tags:
+    - fail2ban
+
+- name: Configure fail2ban
+  import_tasks: configure.yml
+  tags:
+    - fail2ban
+
+- name: Start and enable fail2ban service
+  systemd:
+    name: "{{ fail2ban_service_name }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  tags:
+    - fail2ban

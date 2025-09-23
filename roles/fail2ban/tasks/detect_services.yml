@@ -1,0 +1,106 @@
+---
+
+- name: Check if SSH service is running
+  systemd:
+    name: "{{ item }}"
+  register: ssh_service_status
+  loop:
+    - ssh
+    - sshd
+  failed_when: false
+  tags:
+    - fail2ban
+
+- name: Set SSH service as enabled
+  set_fact:
+    fail2ban_ssh_enabled: true
+  when: ssh_service_status.results | selectattr('status.ActiveState', 'equalto', 'active') | list | length > 0
+  tags:
+    - fail2ban
+
+- name: Check if Nginx is installed and running
+  systemd:
+    name: nginx
+  register: nginx_service_status
+  failed_when: false
+  tags:
+    - fail2ban
+
+- name: Set Nginx protection as enabled
+  set_fact:
+    fail2ban_nginx_enabled: true
+  when:
+    - nginx_service_status.status is defined
+    - nginx_service_status.status.ActiveState == "active"
+  tags:
+    - fail2ban
+
+- name: Check if Apache is installed and running
+  systemd:
+    name: "{{ item }}"
+  register: apache_service_status
+  loop:
+    - apache2
+    - httpd
+  failed_when: false
+  tags:
+    - fail2ban
+
+- name: Set Apache protection as enabled
+  set_fact:
+    fail2ban_apache_enabled: true
+  when: apache_service_status.results | selectattr('status.ActiveState', 'equalto', 'active') | list | length > 0
+  tags:
+    - fail2ban
+
+- name: Check if FTP services are installed and running
+  systemd:
+    name: "{{ item }}"
+  register: ftp_service_status
+  loop:
+    - vsftpd
+    - proftpd
+    - pure-ftpd
+  failed_when: false
+  tags:
+    - fail2ban
+
+- name: Set FTP protection as enabled
+  set_fact:
+    fail2ban_ftp_enabled: true
+  when: ftp_service_status.results | selectattr('status.ActiveState', 'equalto', 'active') | list | length > 0
+  tags:
+    - fail2ban
+
+- name: Check if SFTP is configured (SSH with SFTP subsystem)
+  shell: |
+    if sshd -T 2>/dev/null | grep -q "subsystem.*sftp"; then
+      echo "enabled"
+    else
+      echo "disabled"
+    fi
+  register: sftp_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - fail2ban
+
+- name: Set SFTP protection as enabled
+  set_fact:
+    fail2ban_sftp_enabled: true
+  when:
+    - sftp_check.stdout is defined
+    - sftp_check.stdout == "enabled"
+  tags:
+    - fail2ban
+
+- name: Display detected services
+  debug:
+    msg:
+      - "SSH enabled: {{ fail2ban_ssh_enabled | default(false) }}"
+      - "Nginx enabled: {{ fail2ban_nginx_enabled | default(false) }}"
+      - "Apache enabled: {{ fail2ban_apache_enabled | default(false) }}"
+      - "FTP enabled: {{ fail2ban_ftp_enabled | default(false) }}"
+      - "SFTP enabled: {{ fail2ban_sftp_enabled | default(false) }}"
+  tags:
+    - fail2ban

@@ -1,0 +1,20 @@
+# Fail2ban filter for Apache HTTP flood protection
+# Blocks IPs making too many requests in a short time
+
+[Definition]
+failregex = ^<HOST> -.*"(GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS|CONNECT|TRACE).*" (4|5)\d\d
+            ^<HOST> -.*"(GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS|CONNECT|TRACE).*" 200
+            ^\[.*\] \[error\] \[client <HOST>\]
+            ^\[.*\] \[.*:error\] \[pid \d+\] \[client <HOST>:\d+\]
+
+ignoreregex =
+
+[Init]
+# Specify the name of the log files that contain relevant lines for this filter
+datepattern = ^\[%%d/%%b/%%Y:%%H:%%M:%%S
+
+# Notes:
+# This filter detects:
+# - HTTP error responses (4xx, 5xx)
+# - Apache error log entries
+# - Suspicious patterns that may indicate flooding

@@ -1,0 +1,9 @@
+---
+
+- name: Overwrite prometheus's config file of monitored instances using node exporter
+  ansible.builtin.template:
+    src: prometheus-targets.j2
+    dest: /etc/prometheus/file_sd_configs/monitored-targets.yml
+    owner: prometheus
+    group: prometheus
+    mode: "0644"

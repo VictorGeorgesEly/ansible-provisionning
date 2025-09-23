@@ -1,0 +1,17 @@
+---
+# RedHat/CentOS/Fedora specific variables
+fail2ban_packages:
+  - fail2ban
+  - iptables-services
+
+fail2ban_service_name: "fail2ban"
+fail2ban_config_dir: "/etc/fail2ban"
+fail2ban_jail_local: "/etc/fail2ban/jail.local"
+
+# Log paths for RedHat/CentOS
+fail2ban_log_paths:
+  ssh: "/var/log/secure"
+  nginx: "/var/log/nginx/error.log"
+  apache: "/var/log/httpd/error_log"
+  vsftpd: "/var/log/vsftpd.log"
+  proftpd: "/var/log/proftpd/proftpd.log"

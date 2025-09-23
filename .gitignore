@@ -3,8 +3,10 @@
 **/roles/*
 **/collections/*
 !**/roles/requirements.yml
-!**/roles/promtail
+!**/roles/loki
 !**/roles/node_exporter
+!**/roles/restic
+!**/roles/fail2ban
 .galaxy_install_info
 *.retry
 **/*.retry
@@ -16,4 +18,3 @@
 /templates/listing_backup.html
 .vscode/
 DS_Store
-!roles/restic

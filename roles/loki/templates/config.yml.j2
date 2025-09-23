@@ -1,0 +1,43 @@
+server:
+  disable: true
+
+positions:
+  filename: /etc/promtail/positions.yaml
+
+clients:
+  - url: https://{{ loki_addr }}/loki/api/v1/push
+    basic_auth:
+      username: {{ promtail_username_htpasswd }}
+      password: {{ promtail_password_htpasswd }}
+    tls_config:
+      insecure_skip_verify: true
+    tenant_id: default
+
+scrape_configs:
+  - job_name: system
+    static_configs:
+      {% for path in all_var_log_files -%}
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          instance: "{{ hostvars[inventory_hostname].monit_client_name }}-{{ hostvars[inventory_hostname].monit_project_name }}|{{ hostvars[inventory_hostname].monit_host_name }}"
+          client_name: {{ hostvars[inventory_hostname].monit_client_name }}
+          project_name: {{ hostvars[inventory_hostname].monit_project_name }}
+          env_name: {{ hostvars[inventory_hostname].monit_host_name }}
+          env_type: {{ hostvars[inventory_hostname].monit_type_env }}
+          __path__: {{ path }}
+      {% endfor %}
+
+  - job_name: project
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: project_logs
+          instance: "{{ hostvars[inventory_hostname].monit_client_name }}-{{ hostvars[inventory_hostname].monit_project_name }}|{{ hostvars[inventory_hostname].monit_host_name }}"
+          client_name: {{ hostvars[inventory_hostname].monit_client_name }}
+          project_name: {{ hostvars[inventory_hostname].monit_project_name }}
+          env_name: {{ hostvars[inventory_hostname].monit_host_name }}
+          env_type: {{ hostvars[inventory_hostname].monit_type_env }}
+          __path__: /*/logs/**/*.log

@@ -1,0 +1,47 @@
+---
+- name: Create fail2ban configuration directory
+  file:
+    path: "{{ fail2ban_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - fail2ban
+
+- name: Generate jail.local configuration
+  template:
+    src: jail.local.j2
+    dest: "{{ fail2ban_jail_local }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: yes
+  notify: restart fail2ban
+  tags:
+    - fail2ban
+
+- name: Create custom filters if needed
+  template:
+    src: "{{ item }}.conf.j2"
+    dest: "{{ fail2ban_config_dir }}/filter.d/{{ item }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - nginx-http-flood
+    - apache-http-flood
+  when: fail2ban_nginx_enabled | default(false) or fail2ban_apache_enabled | default(false)
+  notify: restart fail2ban
+  tags:
+    - fail2ban
+
+- name: Create fail2ban log directory
+  file:
+    path: /var/log/fail2ban
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - fail2ban

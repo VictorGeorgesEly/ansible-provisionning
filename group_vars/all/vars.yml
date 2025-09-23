@@ -3,3 +3,12 @@
 # SWAP
 swap_file_size_mb: "2048"
 swap_swappiness: "0"
+
+# Fail2ban
+fail2ban_ignoreip_extra:
+  - "192.168.0.0/16"    # Réseau privé local
+  - "10.0.0.0/8"        # Réseau privé
+  - "172.16.0.0/12"     # Réseau privé
+
+fail2ban_destemail: "admin@example.com"
+fail2ban_sender: "fail2ban@{{ ansible_fqdn }}"

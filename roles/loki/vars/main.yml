@@ -1,0 +1,21 @@
+---
+
+service_name: "promtail"
+user_id: "promtail"
+group_id: "promtail"
+exec_command: /usr/local/bin/promtail --config.file="/etc/promtail/config.yml"
+promtail_version: "3.5.5"
+loki_addr: # TODO
+var_log_files:
+  - /var/log/ufw.log
+  - /var/log/syslog
+  - /var/log/kern.log
+  - /var/log/auth.log
+  - /var/log/mail.log
+  - /var/log/php*.log
+  - /var/log/clamav/*.log
+  - /var/log/nginx/*.log
+  - /var/log/postgresql/*.log
+  - /var/log/redis/*.log
+  - /var/log/apache2/*.log
+  - /var/log/fail2ban.log

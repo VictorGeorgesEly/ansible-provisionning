@@ -1,0 +1,70 @@
+---
+# Fail2ban configuration
+
+# Ban settings
+fail2ban_bantime: "7d"
+fail2ban_findtime: "10m"
+fail2ban_maxretry: 5
+
+# Email notifications
+fail2ban_destemail: ""
+fail2ban_sender: "fail2ban@{{ ansible_fqdn }}"
+fail2ban_mta: "sendmail"
+
+# Ignored IP addresses (always whitelisted)
+fail2ban_ignoreip:
+  - "127.0.0.1/8"
+  - "::1"
+
+# Additional IP addresses to ignore (can be overridden per environment)
+fail2ban_ignoreip_extra: []
+
+# Services to protect (auto-detected based on installed services)
+fail2ban_services:
+  ssh:
+    enabled: true
+    port: "ssh"
+    filter: "sshd"
+    logpath: "/var/log/auth.log"
+    maxretry: 5
+
+  nginx:
+    enabled: false  # Will be auto-enabled if nginx is detected
+    port: "http,https"
+    filter: "nginx-http-auth"
+    logpath: "/var/log/nginx/error.log"
+    maxretry: 6
+
+  apache:
+    enabled: false  # Will be auto-enabled if apache is detected
+    port: "http,https"
+    filter: "apache-auth"
+    logpath: "/var/log/apache2/error.log"
+    maxretry: 6
+
+  ftp:
+    enabled: false  # Will be auto-enabled if FTP is detected
+    port: "ftp,ftp-data,ftps,ftps-data"
+    filter: "vsftpd"
+    logpath: "/var/log/vsftpd.log"
+    maxretry: 6
+
+  sftp:
+    enabled: false  # Will be auto-enabled if SFTP is detected
+    port: "ssh"
+    filter: "sshd"
+    logpath: "/var/log/auth.log"
+    maxretry: 3
+
+# Custom jails (can be added per environment)
+fail2ban_custom_jails: {}
+
+# Backend for fail2ban (auto or systemd)
+fail2ban_backend: "auto"
+
+# Log level
+fail2ban_loglevel: "INFO"
+
+# Database backend (none, file, sqlite3, mysql, postgresql)
+fail2ban_dbfile: "/var/lib/fail2ban/fail2ban.sqlite3"
+fail2ban_dbpurgeage: "1d"

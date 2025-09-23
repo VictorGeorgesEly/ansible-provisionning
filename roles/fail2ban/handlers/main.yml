@@ -1,0 +1,12 @@
+---
+- name: restart fail2ban
+  systemd:
+    name: "{{ fail2ban_service_name }}"
+    state: restarted
+  listen: "restart fail2ban"
+
+- name: reload fail2ban
+  systemd:
+    name: "{{ fail2ban_service_name }}"
+    state: reloaded
+  listen: "reload fail2ban"

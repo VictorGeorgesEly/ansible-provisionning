@@ -38,3 +38,10 @@ restic_exclude_patterns:
 restic_keep_within_daily: "7d"
 restic_keep_within_weekly: "2w"
 restic_keep_within_monthly: "1m"
+
+
+# Fail2ban configuration for development/test environment
+fail2ban_custom_jails: {}
+fail2ban_bantime: "1h"
+fail2ban_findtime: "10m"
+fail2ban_maxretry: 10

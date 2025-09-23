@@ -14,15 +14,53 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a {{ restic_log_file }}
 }
 
+# Compression function - uses the best available compressor
+compress_file() {
+    local input_file="$1"
+    local base_name="${input_file%.*}"
+
+    # Try zstd (best compression ratio and speed)
+    if command -v zstd >/dev/null 2>&1; then
+        log "Compressing with zstd: ${input_file}"
+        zstd -19 --rm "$input_file" -o "${base_name}.zst"
+        echo "${base_name}.zst"
+    # Try lz4 (very fast, good compression)
+    elif command -v lz4 >/dev/null 2>&1; then
+        log "Compressing with lz4: ${input_file}"
+        lz4 -9 --rm "$input_file" "${base_name}.lz4"
+        echo "${base_name}.lz4"
+    # Fallback to bzip2 (good compression, widely available)
+    elif command -v bzip2 >/dev/null 2>&1; then
+        log "Compressing with bzip2: ${input_file}"
+        bzip2 -9 "$input_file"
+        echo "${input_file}.bz2"
+    # Last resort: gzip (always available)
+    else
+        log "Compressing with gzip: ${input_file}"
+        gzip -9 "$input_file"
+        echo "${input_file}.gz"
+    fi
+}
+
 {% for db_backup in restic_database_backups %}
 # Dump {{ db_backup.name }}
 log "Creating dump for {{ db_backup.name }}"
-if {{ db_backup.command }} > "$DUMP_DIR/{{ db_backup.file }}_${DATE}"; then
+DUMP_FILE="$DUMP_DIR/{{ db_backup.file }}_${DATE}"
+
+if {{ db_backup.command }} > "$DUMP_FILE"; then
     log "Successfully created dump: {{ db_backup.file }}_${DATE}"
-    # Keep only the latest dump for this database
-    find "$DUMP_DIR" -name "{{ db_backup.file }}_*" -type f | sort | head -n -1 | xargs rm -f
+
+    # Compress the dump file
+    COMPRESSED_FILE=$(compress_file "$DUMP_FILE")
+    log "Compressed dump created: $(basename "$COMPRESSED_FILE")"
+
+    # Clean up old compressed dumps for this database (keep only current)
+    find "$DUMP_DIR" -name "{{ db_backup.file }}_*" -type f \( -name "*.zst" -o -name "*.lz4" -o -name "*.bz2" -o -name "*.gz" \) ! -name "$(basename "$COMPRESSED_FILE")" -delete 2>/dev/null || true
+
 else
     log "ERROR: Failed to create dump for {{ db_backup.name }}"
+    # Clean up failed dump file
+    rm -f "$DUMP_FILE" 2>/dev/null || true
 fi
 
 {% endfor %}

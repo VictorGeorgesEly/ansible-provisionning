@@ -1,5 +1,6 @@
 # Restic configuration file
 # This file contains environment variables for restic backup
+# Usage: source /opt/restic/restic-env.sh && restic snapshots
 
 # Repository configuration
 export RESTIC_REPOSITORY="{{ restic_repository_url }}/{{ inventory_hostname }}"
@@ -21,3 +22,56 @@ export B2_ACCOUNT_KEY="{{ restic_b2_account_key }}"
 # Additional restic options
 export RESTIC_PROGRESS="true"
 export RESTIC_COMPRESSION="auto"
+
+# Convenience aliases for common operations
+alias restic-snapshots='restic snapshots'
+alias restic-ls='restic ls latest'
+alias restic-check='restic check'
+alias restic-stats='restic stats'
+alias restic-mount='restic mount'
+alias restic-backup-paths='echo "Backup paths: {{ restic_backup_paths | join(", ") }}"'
+
+# Helper functions
+restic-restore() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Usage: restic-restore <snapshot-id> <target-directory>"
+        echo "Example: restic-restore latest /tmp/restore"
+        return 1
+    fi
+    restic restore "$1" --target "$2"
+}
+
+restic-find() {
+    if [ -z "$1" ]; then
+        echo "Usage: restic-find <pattern>"
+        echo "Example: restic-find '*.sql'"
+        return 1
+    fi
+    restic find "$1"
+}
+
+restic-host-snapshots() {
+    restic snapshots --tag "host:{{ inventory_hostname }}"
+}
+
+restic-database-snapshots() {
+    restic snapshots --tag "database"
+}
+
+# Display configuration info
+echo "Restic environment loaded for {{ inventory_hostname }}"
+echo "Repository: {{ restic_repository_url }}/{{ inventory_hostname }}"
+echo "Cache: {{ restic_cache_path }}"
+echo ""
+echo "Available commands:"
+echo "  restic-snapshots       - List all snapshots"
+echo "  restic-host-snapshots  - List snapshots for this host"
+echo "  restic-database-snapshots - List database snapshots"
+echo "  restic-ls              - List files in latest snapshot"
+echo "  restic-check           - Check repository integrity"
+echo "  restic-stats           - Show repository statistics"
+echo "  restic-backup-paths    - Show configured backup paths"
+echo "  restic-restore <id> <target> - Restore snapshot to directory"
+echo "  restic-find <pattern>  - Find files matching pattern"
+echo ""
+echo "Or use restic directly: restic <command>"

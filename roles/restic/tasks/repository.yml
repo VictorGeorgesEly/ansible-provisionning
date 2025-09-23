@@ -1,0 +1,44 @@
+---
+- name: Create local repository directory for testing
+  file:
+    path: "{{ restic_repository_url }}"
+    state: directory
+    owner: "{{ restic_user }}"
+    group: "{{ restic_group }}"
+    mode: "0755"
+  when: restic_repository_type == "local"
+  tags:
+    - restic
+
+- name: Initialize restic repository
+  shell: |
+    export RESTIC_REPOSITORY="{{ restic_repository_url }}/{{ inventory_hostname }}"
+    export RESTIC_PASSWORD="{{ restic_repository_password }}"
+    {% if restic_repository_type == 's3' %}
+        export AWS_ACCESS_KEY_ID="{{ restic_aws_access_key_id }}"
+        export AWS_SECRET_ACCESS_KEY="{{ restic_aws_secret_access_key }}"
+    {% elif restic_repository_type == 'b2' %}
+        export B2_ACCOUNT_ID="{{ restic_b2_account_id }}"
+        export B2_ACCOUNT_KEY="{{ restic_b2_account_key }}"
+    {% endif %}
+    {{ restic_bin_path }} init
+  args:
+    executable: /bin/bash
+    creates: "{{ restic_scripts_path }}/.repo_initialized"
+  become_user: "{{ restic_user }}"
+  register: repo_init
+  failed_when:
+    - repo_init.rc != 0
+    - "'already initialized' not in repo_init.stderr"
+  tags:
+    - restic
+
+- name: Mark repository as initialized
+  file:
+    path: "{{ restic_scripts_path }}/.repo_initialized"
+    state: touch
+    owner: "{{ restic_user }}"
+    group: "{{ restic_group }}"
+  when: repo_init is succeeded
+  tags:
+    - restic

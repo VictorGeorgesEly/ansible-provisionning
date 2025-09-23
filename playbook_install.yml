@@ -1,2 +1,24 @@
 ---
 
+- name: Deploy Restic backup system
+  hosts: all
+  become: yes
+  roles:
+    - restic
+  tags:
+    - restic
+    - backup
+
+  post_tasks:
+    - name: Display backup schedule
+      debug:
+        msg: "Backup scheduled daily at {{ restic_backup_hour }}:{{ restic_backup_minute }} UTC for {{ inventory_hostname }}"
+
+    - name: Verify restic installation
+      command: "{{ restic_bin_path }} version"
+      become_user: "{{ restic_user }}"
+      register: restic_version_check
+
+    - name: Display restic version
+      debug:
+        msg: "Installed restic version: {{ restic_version_check.stdout }}"

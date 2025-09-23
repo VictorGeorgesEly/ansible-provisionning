@@ -1,0 +1,42 @@
+---
+- name: Set architecture variable
+  set_fact:
+    restic_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else '386' if ansible_architecture == 'i386' else ansible_architecture }}"
+  tags:
+    - restic
+
+- name: Set OS variable for download
+  set_fact:
+    restic_os: "{{ 'linux' if ansible_system == 'Linux' else 'darwin' if ansible_system == 'Darwin' else ansible_system|lower }}"
+  tags:
+    - restic
+
+- name: Check if restic binary already exists
+  stat:
+    path: "{{ restic_bin_path }}"
+  register: restic_binary_exists
+  tags:
+    - restic
+
+- name: Download restic binary with curl
+  shell: |
+    curl -L -f -o "/tmp/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2" \
+    "{{ restic_download_base_url }}/v{{ restic_version }}/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2"
+  when: not restic_binary_exists.stat.exists
+  tags:
+    - restic
+
+- name: Extract restic binary
+  shell: |
+    bunzip2 -c /tmp/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2 > {{ restic_bin_path }}
+    chmod +x {{ restic_bin_path }}
+  when: not restic_binary_exists.stat.exists
+  tags:
+    - restic
+
+- name: Remove downloaded archive
+  file:
+    path: "/tmp/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2"
+    state: absent
+  tags:
+    - restic

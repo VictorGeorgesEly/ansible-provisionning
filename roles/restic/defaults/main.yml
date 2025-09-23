@@ -2,6 +2,9 @@
 # Restic version to install
 restic_version: "0.18.1"
 
+# Download configuration
+restic_download_base_url: "https://github.com/restic/restic/releases/download"
+
 # Installation paths
 restic_bin_path: "/usr/local/bin/restic"
 restic_scripts_path: "/opt/restic"

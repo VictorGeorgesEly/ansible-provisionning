@@ -3,8 +3,24 @@
 
 set -e
 
-# Source configuration
-source {{ restic_scripts_path }}/restic.conf
+# Export environment variables directly
+export RESTIC_REPOSITORY="{{ restic_repository_url }}/{{ inventory_hostname }}"
+export RESTIC_PASSWORD="{{ restic_repository_password }}"
+export RESTIC_CACHE_DIR="{{ restic_cache_path }}"
+
+{% if restic_repository_type == 's3' %}
+# AWS S3 configuration
+export AWS_ACCESS_KEY_ID="{{ restic_aws_access_key_id }}"
+export AWS_SECRET_ACCESS_KEY="{{ restic_aws_secret_access_key }}"
+{% elif restic_repository_type == 'b2' %}
+# Backblaze B2 configuration
+export B2_ACCOUNT_ID="{{ restic_b2_account_id }}"
+export B2_ACCOUNT_KEY="{{ restic_b2_account_key }}"
+{% endif %}
+
+# Additional restic options
+export RESTIC_PROGRESS="true"
+export RESTIC_COMPRESSION="auto"
 
 # Logging function
 log() {
@@ -23,6 +39,11 @@ send_notification() {
 
 # Start backup
 log "Starting backup for {{ inventory_hostname }}"
+
+{% if restic_repository_type == 'local' %}
+# Create local repository directory if it doesn't exist
+mkdir -p "{{ restic_repository_url }}"
+{% endif %}
 
 # Run database dumps if configured
 {% if restic_database_backups | length > 0 %}
@@ -52,11 +73,30 @@ BACKUP_PATHS=(
 # Perform backup
 if {{ restic_bin_path }} backup \
     --exclude-file={{ restic_scripts_path }}/exclude.txt \
-    --tag "{{ inventory_hostname }}" \
-    --tag "$(date +%Y-%m-%d)" \
+    --tag "host:{{ inventory_hostname }}" \
+    --tag "date:$(date +%Y-%m-%d)" \
+    --tag "time:$(date +%H-%M)" \
+{% for path in restic_backup_paths %}
+    --tag "path:{{ path | basename }}" \
+{% endfor %}
+{% if restic_database_backups | length > 0 %}
+    --tag "database" \
+{% for db_backup in restic_database_backups %}
+    --tag "db:{{ db_backup.name }}" \
+{% endfor %}
+{% endif %}
     "${BACKUP_PATHS[@]}" 2>&1 | tee -a {{ restic_log_file }}; then
 
     log "Backup completed successfully"
+
+{% if restic_database_backups | length > 0 %}
+    # Clean up database dumps immediately after successful backup
+    log "Cleaning up database dumps from local storage"
+    if [ -d "{{ restic_scripts_path }}/dumps" ]; then
+        find {{ restic_scripts_path }}/dumps -type f \( -name "*.sql*" -o -name "*.archive*" -o -name "*.dump*" -o -name "*.zst" -o -name "*.lz4" -o -name "*.bz2" -o -name "*.gz" \) -delete 2>/dev/null || true
+        log "Database dumps cleaned up successfully"
+    fi
+{% endif %}
 
     # Forget old snapshots
     log "Cleaning up old snapshots"
@@ -75,10 +115,5 @@ else
         "Backup failed for {{ inventory_hostname }} at $(date). Check logs at {{ restic_log_file }}"
     exit 1
 fi
-
-# Clean up database dumps older than 7 days
-{% if restic_database_backups | length > 0 %}
-find {{ restic_scripts_path }}/dumps -type f -mtime +7 -delete 2>/dev/null || true
-{% endif %}
 
 log "All operations completed successfully"

@@ -1,2 +1,40 @@
 ---
 
+# Configuration Restic pour tests Molecule
+# Utilise un backend local pour éviter les dépendances S3
+
+restic_version: "0.18.1"
+
+# Repository configuration pour les tests
+restic_repository_type: "local"
+restic_repository_url: "/tmp/restic-test-repo"
+
+# Repository password pour les tests
+restic_repository_password: "test-password-123"
+
+# Pas de credentials cloud nécessaires pour les tests locaux
+restic_aws_access_key_id: ""
+restic_aws_secret_access_key: ""
+
+# Email notifications désactivées pour les tests
+restic_notification_email: ""
+restic_smtp_server: "localhost"
+restic_smtp_port: 25
+
+# Paths à sauvegarder pour les tests
+restic_backup_paths:
+  - "/etc/hostname"
+  - "/etc/os-release"
+
+# Database backup commands pour les tests (vide)
+restic_database_backups: []
+
+# Patterns d'exclusion basiques pour les tests
+restic_exclude_patterns:
+  - "*.tmp"
+  - "*/tmp/*"
+
+# Politique de rétention pour les tests
+restic_keep_within_daily: "7d"
+restic_keep_within_weekly: "2w"
+restic_keep_within_monthly: "1m"

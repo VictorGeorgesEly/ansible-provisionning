@@ -1,171 +1,24 @@
 ---
-- name: Include OS-specific variables
-  include_vars: "{{ ansible_os_family }}.yml"
-  tags:
-    - restic
-
+# Installation des packages requis
 - name: Install required packages
-  package:
-    name: "{{ restic_packages }}"
-    state: present
-  tags:
-    - restic
+  import_tasks: packages.yml
 
-- name: Create restic group
-  group:
-    name: "{{ restic_group }}"
-    system: yes
-  tags:
-    - restic
+# Création de l'utilisateur et des répertoires
+- name: Create restic user and directories
+  import_tasks: user.yml
 
-- name: Create restic user
-  user:
-    name: "{{ restic_user }}"
-    group: "{{ restic_group }}"
-    system: yes
-    shell: /bin/bash
-    home: "{{ restic_scripts_path }}"
-    create_home: yes
-  tags:
-    - restic
+# Installation du binaire Restic
+- name: Download and install restic binary
+  import_tasks: install.yml
 
-- name: Create restic directories
-  file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ restic_user }}"
-    group: "{{ restic_group }}"
-    mode: "0755"
-  loop:
-    - "{{ restic_scripts_path }}"
-    - "{{ restic_cache_path }}"
-    - "{{ restic_scripts_path }}/scripts"
-    - "{{ restic_scripts_path }}/dumps"
-  tags:
-    - restic
+# Configuration des scripts et fichiers
+- name: Configure restic scripts and files
+  import_tasks: config.yml
 
-- name: Set architecture variable
-  set_fact:
-    restic_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' if ansible_architecture == 'aarch64' else '386' if ansible_architecture == 'i386' else ansible_architecture }}"
-  tags:
-    - restic
+# Configuration des services systemd
+- name: Setup systemd services and timers
+  import_tasks: systemd.yml
 
-- name: Set OS variable for download
-  set_fact:
-    restic_os: "{{ 'linux' if ansible_system == 'Linux' else 'darwin' if ansible_system == 'Darwin' else ansible_system|lower }}"
-  tags:
-    - restic
-
-- name: Download restic binary
-  get_url:
-    url: "https://github.com/restic/restic/releases/download/v{{ restic_version }}/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2"
-    dest: "/tmp/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2"
-    mode: "0644"
-  tags:
-    - restic
-
-- name: Extract restic binary
-  shell: |
-    bunzip2 -c /tmp/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2 > {{ restic_bin_path }}
-    chmod +x {{ restic_bin_path }}
-  args:
-    creates: "{{ restic_bin_path }}"
-  tags:
-    - restic
-
-- name: Remove downloaded archive
-  file:
-    path: "/tmp/restic_{{ restic_version }}_{{ restic_os }}_{{ restic_arch }}.bz2"
-    state: absent
-  tags:
-    - restic
-
-- name: Create restic configuration file
-  template:
-    src: restic.conf.j2
-    dest: "{{ restic_scripts_path }}/restic.conf"
-    owner: "{{ restic_user }}"
-    group: "{{ restic_group }}"
-    mode: "0600"
-  tags:
-    - restic
-
-- name: Create backup script
-  template:
-    src: backup.sh.j2
-    dest: "{{ restic_scripts_path }}/scripts/backup.sh"
-    owner: "{{ restic_user }}"
-    group: "{{ restic_group }}"
-    mode: "0750"
-  notify: reload systemd
-  tags:
-    - restic
-
-- name: Create database dump script
-  template:
-    src: dump_databases.sh.j2
-    dest: "{{ restic_scripts_path }}/scripts/dump_databases.sh"
-    owner: "{{ restic_user }}"
-    group: "{{ restic_group }}"
-    mode: "0750"
-  when: restic_database_backups | length > 0
-  tags:
-    - restic
-
-- name: Create systemd service file
-  template:
-    src: restic-backup.service.j2
-    dest: /etc/systemd/system/restic-backup.service
-    owner: root
-    group: root
-    mode: "0644"
-  notify: reload systemd
-  tags:
-    - restic
-
-- name: Create systemd timer file
-  template:
-    src: restic-backup.timer.j2
-    dest: /etc/systemd/system/restic-backup.timer
-    owner: root
-    group: root
-    mode: "0644"
-  notify: reload systemd
-  tags:
-    - restic
-
+# Initialisation du dépôt Restic
 - name: Initialize restic repository
-  shell: |
-    source {{ restic_scripts_path }}/restic.conf
-    {{ restic_bin_path }} init
-  args:
-    creates: "{{ restic_scripts_path }}/.repo_initialized"
-  become_user: "{{ restic_user }}"
-  environment:
-    RESTIC_REPOSITORY: "{{ restic_repository_url }}/{{ inventory_hostname }}"
-    RESTIC_PASSWORD: "{{ restic_repository_password }}"
-  register: repo_init
-  failed_when:
-    - repo_init.rc != 0
-    - "'already initialized' not in repo_init.stderr"
-  tags:
-    - restic
-
-- name: Mark repository as initialized
-  file:
-    path: "{{ restic_scripts_path }}/.repo_initialized"
-    state: touch
-    owner: "{{ restic_user }}"
-    group: "{{ restic_group }}"
-  when: repo_init is succeeded
-  tags:
-    - restic
-
-- name: Enable and start restic backup timer
-  systemd:
-    name: restic-backup.timer
-    enabled: yes
-    state: started
-    daemon_reload: yes
-  tags:
-    - restic
+  import_tasks: repository.yml

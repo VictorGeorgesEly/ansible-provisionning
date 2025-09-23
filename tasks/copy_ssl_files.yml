@@ -1,0 +1,28 @@
+---
+
+- name: Create ssl steamulo.org directory
+  ansible.builtin.file:
+    path: "/etc/ssl/{{ item }}"
+    state: directory
+    mode: "u=rw,g=r,o=r"
+  with_items:
+    - "steamulo.org"
+    - "steamulo.com"
+
+- name: Copy ssl public files
+  ansible.builtin.copy:
+    src: "files/ssl/{{ item[0] }}/{{ item[1] }}"
+    dest: "/etc/ssl/{{ item[0] }}/{{ item[1] }}"
+    mode: "u=rw,g=r,o=r"
+  with_nested:
+    - [ 'steamulo.org', 'steamulo.com' ]
+    - [ 'certificate.crt', 'dhparam.pem' ]
+
+- name: Copy ssl private files
+  ansible.builtin.copy:
+    src: "files/ssl/{{ item[0] }}/vault_{{ item[1] }}"
+    dest: "/etc/ssl/{{ item[0] }}/{{ item[1] }}"
+    mode: "u=rw,g=r,o=r"
+  with_nested:
+    - [ 'steamulo.org', 'steamulo.com' ]
+    - [ 'private.key' ]

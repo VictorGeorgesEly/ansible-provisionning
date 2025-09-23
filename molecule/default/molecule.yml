@@ -16,7 +16,7 @@ lint: |
   flake8
 platforms:
   - name: provisionning-dev-1
-    box: generic/ubuntu2204
+    box: bento/ubuntu-24.04
     memory: 4096
     cpus: 2
     interfaces:

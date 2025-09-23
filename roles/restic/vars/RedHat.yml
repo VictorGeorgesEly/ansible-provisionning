@@ -5,4 +5,5 @@ restic_packages:
   - bzip2
   - cronie
   - mailx
-
+  - zstd
+  - lz4

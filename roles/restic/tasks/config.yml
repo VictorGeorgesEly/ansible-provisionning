@@ -1,0 +1,42 @@
+---
+- name: Create restic configuration file
+  template:
+    src: restic.conf.j2
+    dest: "{{ restic_scripts_path }}/restic.conf"
+    owner: "{{ restic_user }}"
+    group: "{{ restic_group }}"
+    mode: "0600"
+  tags:
+    - restic
+
+- name: Create restic environment file for manual use
+  template:
+    src: restic-env.sh.j2
+    dest: "{{ restic_scripts_path }}/restic-env.sh"
+    owner: "{{ restic_user }}"
+    group: "{{ restic_group }}"
+    mode: "0644"
+  tags:
+    - restic
+
+- name: Create backup script
+  template:
+    src: backup.sh.j2
+    dest: "{{ restic_scripts_path }}/scripts/backup.sh"
+    owner: "{{ restic_user }}"
+    group: "{{ restic_group }}"
+    mode: "0750"
+  notify: reload systemd
+  tags:
+    - restic
+
+- name: Create database dump script
+  template:
+    src: dump_databases.sh.j2
+    dest: "{{ restic_scripts_path }}/scripts/dump_databases.sh"
+    owner: "{{ restic_user }}"
+    group: "{{ restic_group }}"
+    mode: "0750"
+  when: restic_database_backups | length > 0
+  tags:
+    - restic

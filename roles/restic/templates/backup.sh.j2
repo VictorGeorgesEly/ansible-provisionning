@@ -1,0 +1,84 @@
+#!/bin/bash
+# Restic backup script for {{ inventory_hostname }}
+
+set -e
+
+# Source configuration
+source {{ restic_scripts_path }}/restic.conf
+
+# Logging function
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a {{ restic_log_file }}
+}
+
+# Email notification function
+send_notification() {
+    local subject="$1"
+    local message="$2"
+
+    if [ -n "{{ restic_notification_email }}" ]; then
+        echo "$message" | mail -s "$subject" "{{ restic_notification_email }}"
+    fi
+}
+
+# Start backup
+log "Starting backup for {{ inventory_hostname }}"
+
+# Run database dumps if configured
+{% if restic_database_backups | length > 0 %}
+if [ -f "{{ restic_scripts_path }}/scripts/dump_databases.sh" ]; then
+    log "Running database dumps"
+    bash {{ restic_scripts_path }}/scripts/dump_databases.sh
+fi
+{% endif %}
+
+# Create exclude file
+cat > {{ restic_scripts_path }}/exclude.txt << EOF
+{% for pattern in restic_exclude_patterns %}
+{{ pattern }}
+{% endfor %}
+EOF
+
+# Backup command
+BACKUP_PATHS=(
+{% for path in restic_backup_paths %}
+    "{{ path }}"
+{% endfor %}
+{% if restic_database_backups | length > 0 %}
+    "{{ restic_scripts_path }}/dumps"
+{% endif %}
+)
+
+# Perform backup
+if {{ restic_bin_path }} backup \
+    --exclude-file={{ restic_scripts_path }}/exclude.txt \
+    --tag "{{ inventory_hostname }}" \
+    --tag "$(date +%Y-%m-%d)" \
+    "${BACKUP_PATHS[@]}" 2>&1 | tee -a {{ restic_log_file }}; then
+
+    log "Backup completed successfully"
+
+    # Forget old snapshots
+    log "Cleaning up old snapshots"
+    {{ restic_bin_path }} forget \
+        --keep-within-daily {{ restic_keep_within_daily }} \
+        --keep-within-weekly {{ restic_keep_within_weekly }} \
+        --keep-within-monthly {{ restic_keep_within_monthly }} \
+        --prune \
+        --tag "{{ inventory_hostname }}" 2>&1 | tee -a {{ restic_log_file }}
+
+    log "Backup process completed for {{ inventory_hostname }}"
+
+else
+    log "ERROR: Backup failed for {{ inventory_hostname }}"
+    send_notification "Restic Backup Failed - {{ inventory_hostname }}" \
+        "Backup failed for {{ inventory_hostname }} at $(date). Check logs at {{ restic_log_file }}"
+    exit 1
+fi
+
+# Clean up database dumps older than 7 days
+{% if restic_database_backups | length > 0 %}
+find {{ restic_scripts_path }}/dumps -type f -mtime +7 -delete 2>/dev/null || true
+{% endif %}
+
+log "All operations completed successfully"

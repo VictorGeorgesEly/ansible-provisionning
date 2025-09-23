@@ -1,0 +1,11 @@
+[Unit]
+Description=Restic Backup Timer for {{ inventory_hostname }}
+Requires=restic-backup.service
+
+[Timer]
+OnCalendar=*-*-* {{ restic_backup_hour }}:{{ restic_backup_minute }}:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target

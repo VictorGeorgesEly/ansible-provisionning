@@ -1,0 +1,26 @@
+[Unit]
+Description=Restic Backup Service for {{ inventory_hostname }}
+Documentation=https://restic.readthedocs.io/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User={{ restic_user }}
+Group={{ restic_group }}
+ExecStart={{ restic_scripts_path }}/scripts/backup.sh
+StandardOutput=journal
+StandardError=journal
+Environment=HOME={{ restic_scripts_path }}
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

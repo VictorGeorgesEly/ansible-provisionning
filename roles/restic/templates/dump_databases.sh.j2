@@ -1,0 +1,30 @@
+#!/bin/bash
+# Database dump script for restic backup
+
+set -e
+
+DUMP_DIR="{{ restic_scripts_path }}/dumps"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+# Ensure dump directory exists
+mkdir -p "$DUMP_DIR"
+
+# Logging function
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a {{ restic_log_file }}
+}
+
+{% for db_backup in restic_database_backups %}
+# Dump {{ db_backup.name }}
+log "Creating dump for {{ db_backup.name }}"
+if {{ db_backup.command }} > "$DUMP_DIR/{{ db_backup.file }}_${DATE}"; then
+    log "Successfully created dump: {{ db_backup.file }}_${DATE}"
+    # Keep only the latest dump for this database
+    find "$DUMP_DIR" -name "{{ db_backup.file }}_*" -type f | sort | head -n -1 | xargs rm -f
+else
+    log "ERROR: Failed to create dump for {{ db_backup.name }}"
+fi
+
+{% endfor %}
+
+log "Database dump process completed"

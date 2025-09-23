@@ -1,0 +1,45 @@
+---
+
+dependency:
+  name: galaxy
+  options:
+    role-file: roles/requirements.yml
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+lint: |
+  set -e
+  export ANSIBLE_ROLES_PATH=${MOLECULE_EPHEMERAL_DIRECTORY}/roles
+  export ANSIBLE_COLLECTIONS_PATH=${MOLECULE_EPHEMERAL_DIRECTORY}/collections
+  ansible-lint --exclude ${MOLECULE_EPHEMERAL_DIRECTORY}
+  flake8
+platforms:
+  - name: provisionning-dev-1
+    box: generic/ubuntu2204
+    memory: 4096
+    cpus: 2
+    interfaces:
+      - auto_config: true
+        ip: 192.168.56.10
+        network_name: private_network
+        type: static
+    provider_override_args:
+      - "vm.provision 'shell', inline: 'apt update'"
+    provision: true
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_CONFIG: ../../ansible.cfg
+  inventory:
+    links:
+      hosts: ../../hosts/hosts_dev
+      group_vars: ../../group_vars/
+  playbooks:
+    converge: ../../playbook_install.yml
+scenario:
+  name: default
+verifier:
+  name: testinfra
+  options:
+    sudo: true

@@ -1,0 +1,8 @@
+---
+# RedHat/CentOS/Fedora specific variables
+restic_packages:
+  - curl
+  - bzip2
+  - cronie
+  - mailx
+

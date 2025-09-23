@@ -1,0 +1,65 @@
+---
+
+- name: Ensure base directory for local systemd services exist
+  ansible.builtin.file:
+    state: directory
+    path: /usr/local/lib/systemd/system
+    mode: "0755"
+    owner: root
+    group: root
+  tags:
+    - periodic
+
+- name: Create systemd unit file
+  ansible.builtin.template:
+    src: periodic.service.j2
+    dest: "/usr/local/lib/systemd/system/{{ item.key }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: yes
+  notify: reload systemd
+  tags:
+    - periodic
+
+- name: Create systemd timer file
+  ansible.builtin.template:
+    src: periodic.timer.j2
+    dest: "/usr/local/lib/systemd/system/{{ item.key }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: yes
+  notify: reload systemd
+  tags:
+    - periodic
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  tags:
+    - periodic
+
+- name: "Ensure timer is running and set to start on boot for {{ item.key }}"
+  ansible.builtin.systemd:
+    state: started
+    enabled: yes
+    name: "{{ item.key }}.timer"
+  tags:
+    - periodic
+
+- name: "Verify timer status for {{ item.key }}"
+  ansible.builtin.systemd:
+    name: "{{ item.key }}.timer"
+  register: timer_status
+  tags:
+    - periodic
+    - verify
+
+- name: "Display timer status for {{ item.key }}"
+  ansible.builtin.debug:
+    msg: "Timer {{ item.key }}.timer is {{ timer_status.status.ActiveState }}"
+  when: timer_status.status is defined
+  tags:
+    - periodic
+    - verify

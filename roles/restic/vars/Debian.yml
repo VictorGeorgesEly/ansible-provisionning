@@ -1,0 +1,8 @@
+---
+# Debian/Ubuntu specific variables
+restic_packages:
+  - curl
+  - bzip2
+  - cron
+  - mailutils
+

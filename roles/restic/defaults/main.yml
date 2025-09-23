@@ -1,0 +1,67 @@
+---
+# Restic version to install
+restic_version: "0.18.1"
+
+# Installation paths
+restic_bin_path: "/usr/local/bin/restic"
+restic_scripts_path: "/opt/restic"
+restic_cache_path: "/opt/restic/cache"
+restic_log_file: "/var/log/restic-backup.log"
+
+# Backup schedule (systemd timer format)
+restic_backup_hour: "{{ 2 + (ansible_play_hosts.index(inventory_hostname) * 15) // 60 }}"
+restic_backup_minute: "{{ (ansible_play_hosts.index(inventory_hostname) * 15) % 60 }}"
+
+# Retention policy
+restic_keep_within_daily: "14d"
+restic_keep_within_weekly: "4m"
+restic_keep_within_monthly: "1y"
+
+# Repository settings
+restic_repository_type: "s3"  # s3, b2, local, etc.
+restic_repository_url: ""
+restic_repository_password: ""
+
+# S3/Backblaze B2 credentials
+restic_aws_access_key_id: ""
+restic_aws_secret_access_key: ""
+restic_b2_account_id: ""
+restic_b2_account_key: ""
+
+# Email notifications
+restic_notification_email: ""
+restic_smtp_server: "localhost"
+restic_smtp_port: 25
+
+# Backup paths
+restic_backup_paths: []
+# Example:
+# restic_backup_paths:
+#   - /etc
+#   - /home
+#   - /var/www
+
+# Database backup commands
+restic_database_backups: []
+# Example:
+# restic_database_backups:
+#   - name: "mysql_all"
+#     command: "mysqldump --all-databases --single-transaction"
+#     file: "mysql_all_databases.sql"
+#   - name: "postgresql_all"
+#     command: "pg_dumpall -U postgres"
+#     file: "postgresql_all_databases.sql"
+
+# Additional exclude patterns
+restic_exclude_patterns:
+  - "*.tmp"
+  - "*.log"
+  - "*/.cache/*"
+  - "*/tmp/*"
+  - "*/proc/*"
+  - "*/sys/*"
+  - "*/dev/*"
+
+# Service user for running backups
+restic_user: "restic"
+restic_group: "restic"

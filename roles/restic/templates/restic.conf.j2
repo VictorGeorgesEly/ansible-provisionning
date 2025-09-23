@@ -1,0 +1,23 @@
+# Restic configuration file
+# This file contains environment variables for restic backup
+
+# Repository configuration
+export RESTIC_REPOSITORY="{{ restic_repository_url }}/{{ inventory_hostname }}"
+export RESTIC_PASSWORD="{{ restic_repository_password }}"
+export RESTIC_CACHE_DIR="{{ restic_cache_path }}"
+
+{% if restic_repository_type == 's3' %}
+# AWS S3 configuration
+export AWS_ACCESS_KEY_ID="{{ restic_aws_access_key_id }}"
+export AWS_SECRET_ACCESS_KEY="{{ restic_aws_secret_access_key }}"
+{% endif %}
+
+{% if restic_repository_type == 'b2' %}
+# Backblaze B2 configuration
+export B2_ACCOUNT_ID="{{ restic_b2_account_id }}"
+export B2_ACCOUNT_KEY="{{ restic_b2_account_key }}"
+{% endif %}
+
+# Additional restic options
+export RESTIC_PROGRESS="true"
+export RESTIC_COMPRESSION="auto"

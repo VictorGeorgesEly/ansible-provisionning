@@ -1,0 +1,9 @@
+---
+
+exclude_paths:
+  - .ansible
+  - .virtualenv
+  - roles
+  - group_vars/*/vault.yml
+skip_list:
+  - experimental

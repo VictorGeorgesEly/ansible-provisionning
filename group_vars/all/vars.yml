@@ -1,0 +1,5 @@
+---
+
+# SWAP
+swap_file_size_mb: "2048"
+swap_swappiness: "0"

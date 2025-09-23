@@ -1,13 +1,29 @@
 ---
 
 - name: Deploy Restic backup system
-  hosts: all
+  hosts: all:!localhost
   become: yes
+  pre_tasks:
+    - name: Check swap device
+      ansible.builtin.command: swapon --show=NAME --raw --noheadings
+      register: swap_device
+      ignore_errors: true
+      changed_when: false
+      tags: always
+  tasks:
+    - name: Include SSL files task
+      ansible.builtin.include_tasks:
+        file: tasks/copy_ssl_files.yml
+        apply:
+          tags: [ "ssl" ]
+      tags: [ "ssl" ]
+    - name: Include periodic tasks
+      ansible.builtin.include_tasks: tasks/periodic_tasks.yml
+      loop: "{{ periodic_tasks | default({}) | dict2items }}"
+      tags: [ "periodic" ]
   roles:
-    - restic
-  tags:
-    - restic
-    - backup
+    - { role: restic, tags: [ "backup", "restic" ] }
+    - { role: geerlingguy.swap, tags: [ "swap" ], when: swap_device.rc == 0 and not (swap_device.stdout | regex_search('^/dev')) }
 
   post_tasks:
     - name: Display backup schedule

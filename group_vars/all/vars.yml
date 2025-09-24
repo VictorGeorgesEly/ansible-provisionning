@@ -13,3 +13,6 @@ fail2ban_ignoreip_extra:
 
 fail2ban_destemail: "{{ vault_fail2ban_destemail }}"
 fail2ban_sender: "fail2ban@victorely.com"
+
+# Loki / Promtail
+loki_addr: ""

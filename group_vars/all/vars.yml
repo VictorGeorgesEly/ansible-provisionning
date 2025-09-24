@@ -9,6 +9,7 @@ fail2ban_ignoreip_extra:
   - "192.168.0.0/16"    # Réseau privé local
   - "10.0.0.0/8"        # Réseau privé
   - "172.16.0.0/12"     # Réseau privé
+  # TODO add your own IPs or networks to ignore here
 
-fail2ban_destemail: "admin@example.com"
-fail2ban_sender: "fail2ban@{{ ansible_fqdn }}"
+fail2ban_destemail: "{{ vault_fail2ban_destemail }}"
+fail2ban_sender: "fail2ban@victorely.com"

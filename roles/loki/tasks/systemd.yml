@@ -1,0 +1,20 @@
+---
+# Configuration du service systemd
+- name: Copy systemd service file
+  ansible.builtin.template:
+    src: init.service.j2
+    dest: /etc/systemd/system/promtail.service
+    owner: "{{ user_id }}"
+    group: "{{ group_id }}"
+    mode: 0644
+  notify: Restart promtail
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Enable and start promtail service
+  ansible.builtin.systemd:
+    name: promtail
+    enabled: yes
+    state: started

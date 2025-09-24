@@ -1,0 +1,14 @@
+---
+# Configuration des fichiers de configuration
+- name: Concat logs and extra logs
+  ansible.builtin.set_fact:
+    all_var_log_files: "{{ var_log_files + extra_var_log_files | unique }}"
+
+- name: Create promtail config file
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: /etc/promtail/config.yml
+    owner: "{{ user_id }}"
+    group: "{{ group_id }}"
+    mode: 0644
+  notify: Restart promtail

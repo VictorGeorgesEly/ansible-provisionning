@@ -1,0 +1,32 @@
+---
+# Installation du binaire Promtail
+- name: Check if promtail is already installed
+  ansible.builtin.stat:
+    path: "/usr/local/bin/promtail"
+  register: promtail_status
+
+- name: Download promtail binary
+  ansible.builtin.unarchive:
+    src: "{{ promtail_download_url }}"
+    dest: /tmp/
+    remote_src: yes
+  when: not promtail_status.stat.exists
+
+- name: Copy promtail binary to /usr/local/bin
+  ansible.builtin.copy:
+    src: "/tmp/promtail-{{ promtail_os }}-{{ promtail_arch }}"
+    dest: "/usr/local/bin/promtail"
+    owner: "{{ user_id }}"
+    group: "{{ group_id }}"
+    remote_src: yes
+    mode: 0755
+  when: not promtail_status.stat.exists
+
+- name: Clean up temporary files
+  ansible.builtin.file:
+    path: '/tmp/{{ item }}'
+    state: absent
+  loop:
+    - "promtail-{{ promtail_os }}-{{ promtail_arch }}"
+    - "promtail-{{ promtail_os }}-{{ promtail_arch }}.zip"
+  when: not promtail_status.stat.exists

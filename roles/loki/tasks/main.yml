@@ -1,83 +1,17 @@
 ---
 
-- name: Create promtail user group
-  ansible.builtin.group:
-    name: "{{ group_id }}"
-    state: present
-  become: true
+# Création de l'utilisateur et des répertoires
+- name: Setup promtail user and directories
+  import_tasks: user.yml
 
-- name: Create promtail user
-  ansible.builtin.user:
-    name: "{{ user_id }}"
-    group: "{{ group_id }}"
-    system: yes
-    shell: "/sbin/nologin"
-    comment: "{{ user_id }} nologin User"
-    createhome: "no"
-    state: present
+# Installation du binaire Promtail
+- name: Install promtail binary
+  import_tasks: install.yml
 
-- name: Add promtail user to adm group
-  ansible.builtin.user:
-    name: "{{ user_id }}"
-    groups: adm
-    append: yes
+# Configuration des fichiers
+- name: Configure promtail
+  import_tasks: config.yml
 
-- name: Create promtail directory
-  ansible.builtin.file:
-      path: "/etc/promtail"
-      state: directory
-      owner: "{{ user_id }}"
-      group: "{{ group_id }}"
-      mode: 0755
-
-- name: Check if promtail is already installed
-  ansible.builtin.stat:
-    path: "/usr/local/bin/promtail"
-  register: promtail_status
-
-- name: Install promtail if not already installed
-  ansible.builtin.unarchive:
-    src: "https://github.com/grafana/loki/releases/download/v{{ promtail_version }}/promtail-linux-amd64.zip"
-    dest: /tmp/
-    remote_src: yes
-  when: not promtail_status.stat.exists
-
-- name: Copy promtail file to bin if needed
-  ansible.builtin.copy:
-    src: "/tmp/promtail-linux-amd64"
-    dest: "/usr/local/bin/promtail"
-    owner: "{{ user_id }}"
-    group: "{{ group_id }}"
-    remote_src: yes
-    mode: 0755
-  when: not promtail_status.stat.exists
-
-- name: Delete promtail tmp files
-  ansible.builtin.file:
-    path: '/tmp/{{ item }}'
-    state: absent
-  loop:
-    - "promtail-linux-amd64"
-    - "promtail-linux-amd64.zip"
-
-- name: Concat logs and extra logs
-  ansible.builtin.set_fact:
-    all_var_log_files: "{{ var_log_files + extra_var_log_files | unique }}"
-
-- name: Create promtail config file
-  ansible.builtin.template:
-    src: config.yml.j2
-    dest: /etc/promtail/config.yml
-    owner: "{{ user_id }}"
-    group: "{{ group_id }}"
-    mode: 0644
-  notify: Restart promtail
-
-- name: Copy systemd init file
-  ansible.builtin.template:
-    src: init.service.j2
-    dest: /etc/systemd/system/promtail.service
-    owner: "{{ user_id }}"
-    group: "{{ group_id }}"
-    mode: 0644
-  notify: Restart promtail
+# Configuration du service systemd
+- name: Setup promtail systemd service
+  import_tasks: systemd.yml

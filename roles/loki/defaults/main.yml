@@ -1,1 +1,38 @@
+---
+# Version de Promtail à installer
+promtail_version: "3.5.5"
+
+# Détection automatique de l'OS et de l'architecture
+promtail_os: "{{ 'linux' if ansible_system == 'Linux' else 'darwin' if ansible_system == 'Darwin' else ansible_system | lower }}"
+promtail_arch: "{{ 'amd64' if ansible_architecture in ['x86_64'] else 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}"
+
+# URL de téléchargement construite dynamiquement
+promtail_base_url: "https://github.com/grafana/loki/releases/download"
+promtail_download_url: "{{ promtail_base_url }}/v{{ promtail_version }}/promtail-{{ promtail_os }}-{{ promtail_arch }}.zip"
+
+# Configuration utilisateur et service
+service_name: "promtail"
+user_id: "promtail"
+group_id: "promtail"
+exec_command: "/usr/local/bin/promtail --config.file=/etc/promtail/config.yml"
+
+# Configuration Loki
+loki_addr: # TODO - à définir dans les group_vars
+
+# Logs par défaut à surveiller
+var_log_files:
+  - /var/log/ufw.log
+  - /var/log/syslog
+  - /var/log/kern.log
+  - /var/log/auth.log
+  - /var/log/mail.log
+  - /var/log/php*.log
+  - /var/log/clamav/*.log
+  - /var/log/nginx/*.log
+  - /var/log/postgresql/*.log
+  - /var/log/redis/*.log
+  - /var/log/apache2/*.log
+  - /var/log/fail2ban.log
+
+# Logs supplémentaires (à définir dans les group_vars si besoin)
 extra_var_log_files: []

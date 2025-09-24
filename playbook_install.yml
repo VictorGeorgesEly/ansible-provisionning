@@ -22,47 +22,13 @@
     - { role: node_exporter, tags: [ "node_exporter" ], when: monit_client_name is defined and monit_project_name is defined and monit_host_name is defined }
     - { role: loki, tags: [ "loki" ], when: monit_client_name is defined and monit_project_name is defined and monit_host_name is defined }
 
-  post_tasks:
-    - name: Display backup schedule
-      debug:
-        msg: "Backup scheduled daily at {{ restic_backup_hour }}:{{ restic_backup_minute }} UTC for {{ inventory_hostname }}"
-
-    - name: Verify restic installation
-      command: "{{ restic_bin_path }} version"
-      become_user: "{{ restic_user }}"
-      register: restic_version_check
-
-    - name: Display restic version
-      debug:
-        msg: "Installed restic version: {{ restic_version_check.stdout }}"
-
-
-    - name: Display fail2ban status
-      command: fail2ban-client status
-      register: fail2ban_status
-      changed_when: false
-
-    - name: Show active jails
-      debug:
-        msg: "{{ fail2ban_status.stdout_lines }}"
-
-    - name: Display protected services summary
-      debug:
-        msg:
-          - "SSH Protection: {{ fail2ban_ssh_enabled | default(true) }}"
-          - "Nginx Protection: {{ fail2ban_nginx_enabled | default(false) }}"
-          - "Apache Protection: {{ fail2ban_apache_enabled | default(false) }}"
-          - "FTP Protection: {{ fail2ban_ftp_enabled | default(false) }}"
-          - "SFTP Protection: {{ fail2ban_sftp_enabled | default(false) }}"
-
-
-- name: Generate Prometheus targets
-  hosts: # TODO
-  become: true
-  tasks:
-    - name: Include generate Prometheus targets task
-      ansible.builtin.include_tasks:
-        file: tasks/generate_prometheus_targets.yml
-        apply:
-          tags: [ "never", "prometheus" ]
-      tags: [ "prometheus" ]
+#- name: Generate Prometheus targets
+#  hosts: # TODO
+#  become: true
+#  tasks:
+#    - name: Include generate Prometheus targets task
+#      ansible.builtin.include_tasks:
+#        file: tasks/generate_prometheus_targets.yml
+#        apply:
+#          tags: [ "never", "prometheus" ]
+#      tags: [ "prometheus" ]

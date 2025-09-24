@@ -1,77 +1,12 @@
 ---
+# Création de l'utilisateur et des répertoires
+- name: Setup node_exporter user and directories
+  import_tasks: user.yml
 
-- name: Creating node_exporter user group
-  ansible.builtin.group: 
-    name: "{{ node_exporter_group_name }}"
-  become: true
+# Installation du binaire Node Exporter
+- name: Install node_exporter binary
+  import_tasks: install.yml
 
-- name: Creating node_exporter user
-  ansible.builtin.user:
-    name: "{{ node_exporter_user_name }}"
-    group: "{{ node_exporter_group_name }}"
-    system: true
-    shell: "/sbin/nologin"
-    comment: "{{ node_exporter_user_name }} nologin User"
-    create_home: false
-    state: present
-
-- name: Check if node_exporter is already installed
-  ansible.builtin.stat:
-    path: "/usr/local/bin/node_exporter"
-  register: node_exporter_bin
-
-- name: Get current node_exporter version
-  ansible.builtin.command: "/usr/local/bin/node_exporter --version"
-  register: node_exporter_version_installed
-  changed_when: false
-  when: node_exporter_bin.stat.exists
-
-- name: Extract installed version
-  ansible.builtin.set_fact:
-    installed_version: "{{ node_exporter_version_installed.stdout_lines[0] | regex_search('version ([0-9.]+)', '\\1') | first }}"
-  when: node_exporter_bin.stat.exists
-
-- name: Show installed node_exporter version
-  ansible.builtin.debug:
-    msg: "Installed node_exporter version: {{ installed_version | default('Not installed') }}"
-
-- name: Install prometheus's node exporter
-  ansible.builtin.unarchive:
-    src: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
-    dest: /tmp/
-    remote_src: true
-  when: >
-    not node_exporter_bin.stat.exists or
-    (installed_version is not defined or installed_version != node_exporter_version)
-
-- name: Copy prometheus's node exporter file to bin
-  ansible.builtin.copy:
-    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
-    dest: "/usr/local/bin/node_exporter"
-    owner: "{{ node_exporter_user_name }}"
-    group: "{{ node_exporter_group_name }}"
-    remote_src: true
-    mode: "0755"
-  when: >
-    not node_exporter_bin.stat.exists or
-    (installed_version is not defined or installed_version != node_exporter_version)
-
-- name: Delete node exporter tmp folder
-  ansible.builtin.file:
-    path: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64"
-    state: absent
-
-- name: Copy systemd init file
-  ansible.builtin.template:
-    src: init.service.j2
-    dest: /etc/systemd/system/node_exporter.service
-    owner: root
-    group: root
-    mode: "0644"
-
-- name: Start node_exporter service
-  ansible.builtin.service:
-    name: node_exporter
-    state: started
-    enabled: true
-    daemon_reload: true
+# Configuration du service systemd
+- name: Setup node_exporter systemd service
+  import_tasks: systemd.yml

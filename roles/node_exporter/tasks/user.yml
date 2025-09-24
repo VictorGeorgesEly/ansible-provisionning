@@ -1,0 +1,17 @@
+---
+# Création de l'utilisateur et des groupes
+- name: Create node_exporter user group
+  ansible.builtin.group:
+    name: "{{ node_exporter_group_name }}"
+    state: present
+  become: true
+
+- name: Create node_exporter user
+  ansible.builtin.user:
+    name: "{{ node_exporter_user_name }}"
+    group: "{{ node_exporter_group_name }}"
+    system: yes
+    shell: "/sbin/nologin"
+    comment: "{{ node_exporter_user_name }} nologin User"
+    createhome: "no"
+    state: present

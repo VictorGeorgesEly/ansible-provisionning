@@ -1,0 +1,8 @@
+---
+# Handlers pour le service node_exporter
+- name: Restart node_exporter
+  ansible.builtin.systemd:
+    name: "{{ node_exporter_service_name }}"
+    state: restarted
+  become: true
+

@@ -1,3 +1,19 @@
 ---
 
+# Version de Node Exporter à installer
+node_exporter_version: "1.9.1"
+
+# Détection automatique de l'OS et de l'architecture
+node_exporter_os: "{{ 'linux' if ansible_system == 'Linux' else 'darwin' if ansible_system == 'Darwin' else ansible_system | lower }}"
+node_exporter_arch: "{{ 'amd64' if ansible_architecture in ['x86_64'] else 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else '386' if ansible_architecture in ['i386', 'i686'] else 'amd64' }}"
+
+# URL de téléchargement construite dynamiquement
+node_exporter_base_url: "https://github.com/prometheus/node_exporter/releases/download"
+node_exporter_download_url: "{{ node_exporter_base_url }}/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.{{ node_exporter_os }}-{{ node_exporter_arch }}.tar.gz"
+
+# Configuration du service
+node_exporter_service_name: "node_exporter"
+node_exporter_user_name: "node_exporter"
+node_exporter_group_name: "node_exporter"
 node_exporter_port: 9100
+node_exporter_exec_command: "/usr/local/bin/node_exporter --log.level='warn' --collector.systemd --web.listen-address=:{{ node_exporter_port }}"

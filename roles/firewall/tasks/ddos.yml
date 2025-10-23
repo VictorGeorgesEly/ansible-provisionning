@@ -1,0 +1,34 @@
+---
+- name: Check if anti-DDoS rules already exist in before.rules
+  ansible.builtin.lineinfile:
+    path: "{{ ufw_before_rules }}"
+    line: "# BEGIN UFW ANTI-DDOS PROTECTION"
+    state: absent
+  check_mode: true
+  register: ddos_rules_check
+  changed_when: false
+
+- name: Backup original before.rules before adding anti-DDoS protection
+  ansible.builtin.copy:
+    src: "{{ ufw_before_rules }}"
+    dest: "{{ ufw_before_rules }}.backup-ddos"
+    remote_src: true
+    backup: true
+  when: not ddos_rules_check.found
+
+- name: Add anti-DDoS protection rules to before.rules
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_before_rules }}"
+    block: "{{ lookup('template', 'anti-ddos-rules.j2') }}"
+    marker: "# {mark} ANSIBLE MANAGED ANTI-DDOS RULES"
+    insertbefore: "COMMIT"
+  when: not ddos_rules_check.found
+  notify: "reload ufw"
+
+- name: Remove anti-DDoS protection rules if disabled
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_before_rules }}"
+    marker: "# {mark} ANSIBLE MANAGED ANTI-DDOS RULES"
+    state: absent
+  when: not ufw_ddos_enabled
+  notify: "reload ufw"

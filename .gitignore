@@ -7,6 +7,7 @@
 !**/roles/node_exporter
 !**/roles/restic
 !**/roles/fail2ban
+!**/roles/firewall
 .galaxy_install_info
 *.retry
 **/*.retry

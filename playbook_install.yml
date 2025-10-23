@@ -16,6 +16,7 @@
       loop: "{{ periodic_tasks | default({}) | dict2items }}"
       tags: [ "periodic" ]
   roles:
+    - { role: firewall, tags: [ "firewall", "ufw" ] }
     - { role: restic, tags: [ "backup", "restic" ] }
     - { role: fail2ban, tags: [ "fail2ban" ] }
     - { role: geerlingguy.swap, tags: [ "swap" ], when: swap_device.rc == 0 and not (swap_device.stdout | regex_search('^/dev')) }

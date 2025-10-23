@@ -1,0 +1,17 @@
+---
+- name: Install UFW package and check status
+  import_tasks: install.yml
+
+- name: Configure UFW default policies and settings
+  import_tasks: config.yml
+
+- name: Configure anti-DDoS protection rules
+  import_tasks: ddos.yml
+  when: ufw_ddos_enabled | bool
+
+- name: Apply firewall rules and whitelist/blacklist
+  import_tasks: rules.yml
+
+- name: Configure UFW rules for Docker
+  import_tasks: docker.yml
+  when: ufw_docker_enabled | bool

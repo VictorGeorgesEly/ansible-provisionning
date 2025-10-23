@@ -1,0 +1,27 @@
+---
+- name: Set UFW default policies
+  ansible.builtin.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: "incoming", policy: "{{ ufw_default_incoming_policy }}" }
+    - { direction: "outgoing", policy: "{{ ufw_default_outgoing_policy }}" }
+    - { direction: "routed", policy: "{{ ufw_default_forward_policy }}" }
+  when: not ufw_currently_enabled or ufw_install_result.changed
+
+- name: Set UFW logging level
+  ansible.builtin.ufw:
+    logging: "{{ ufw_logging }}"
+  when: ufw_logging != "off"
+
+- name: Disable UFW logging
+  ansible.builtin.ufw:
+    logging: "off"
+  when: ufw_logging == "off"
+
+- name: Reset UFW to defaults (only if needed)
+  ansible.builtin.command: ufw --force reset
+  when:
+    - not ufw_currently_enabled
+    - ufw_install_result.changed
+  changed_when: true

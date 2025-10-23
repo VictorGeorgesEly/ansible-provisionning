@@ -1,0 +1,138 @@
+---
+- name: Get current UFW deny rules for blacklisted IPs
+  ansible.builtin.shell: |
+    ufw status numbered | grep -E '^[ ]*[0-9]+[ ]*DENY IN' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(/[0-9]+)?' || echo ""
+  register: current_blacklisted_ips
+  changed_when: false
+  failed_when: false
+
+- name: Remove old blacklisted IPs that are no longer in the list
+  ansible.builtin.ufw:
+    rule: allow
+    src: "{{ item }}"
+    delete: true
+  loop: "{{ current_blacklisted_ips.stdout_lines | default([]) }}"
+  when:
+    - current_blacklisted_ips.stdout_lines is defined
+    - current_blacklisted_ips.stdout_lines | length > 0
+    - item not in ufw_blacklisted_ips
+    - item != ""
+
+- name: Block current blacklisted IPs
+  ansible.builtin.ufw:
+    rule: deny
+    src: "{{ item }}"
+  loop: "{{ ufw_blacklisted_ips }}"
+  when: ufw_blacklisted_ips | length > 0
+
+- name: Get current UFW rules
+  ansible.builtin.command: ufw status numbered
+  register: current_ufw_rules
+  changed_when: false
+  failed_when: false
+
+- name: Configure all whitelisted incoming ports
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ item.to_port | string }}"
+    proto: "{{ item.proto | default('any') }}"
+    src: "{{ item.from_ip | default('any') }}"
+  loop: "{{ ufw_all_whitelisted_ports }}"
+  when:
+    - ufw_all_whitelisted_ports | length > 0
+    - item.to_port is defined
+  register: all_rules_result
+
+- name: Apply custom before.rules IPv4
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_before_rules }}"
+    block: "{{ ufw_before_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM BEFORE RULES"
+    insertbefore: "# BEGIN ANSIBLE MANAGED ANTI-DDOS RULES"
+  when:
+    - ufw_before_rules_custom | length > 0
+    - ufw_ddos_enabled | bool
+  notify: "reload ufw"
+
+- name: Apply custom before.rules IPv4 (no anti-DDoS)
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_before_rules }}"
+    block: "{{ ufw_before_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM BEFORE RULES"
+    insertbefore: "COMMIT"
+  when:
+    - ufw_before_rules_custom | length > 0
+    - not (ufw_ddos_enabled | bool)
+  notify: "reload ufw"
+
+- name: Apply custom after.rules IPv4
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_after_rules }}"
+    block: "{{ ufw_after_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM AFTER RULES"
+    insertbefore: "# BEGIN ANSIBLE MANAGED DOCKER RULES"
+  when:
+    - ufw_after_rules_custom | length > 0
+    - ufw_docker_enabled | bool
+  notify: "reload ufw"
+
+- name: Apply custom after.rules IPv4 (no Docker)
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_after_rules }}"
+    block: "{{ ufw_after_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM AFTER RULES"
+    insertbefore: "COMMIT"
+  when:
+    - ufw_after_rules_custom | length > 0
+    - not (ufw_docker_enabled | bool)
+  notify: "reload ufw"
+
+- name: Apply custom user.rules IPv4
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_user_rules }}"
+    block: "{{ ufw_user_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM USER RULES"
+    insertbefore: "COMMIT"
+  when: ufw_user_rules_custom | length > 0
+  notify: "reload ufw"
+
+- name: Apply custom before6.rules IPv6
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_before6_rules }}"
+    block: "{{ ufw_before6_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM BEFORE6 RULES"
+    insertbefore: "COMMIT"
+  when: ufw_before6_rules_custom | length > 0
+  notify: "reload ufw"
+
+- name: Apply custom after6.rules IPv6
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_after6_rules }}"
+    block: "{{ ufw_after6_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM AFTER6 RULES"
+    insertbefore: "COMMIT"
+  when: ufw_after6_rules_custom | length > 0
+  notify: "reload ufw"
+
+- name: Apply custom user6.rules IPv6
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_user6_rules }}"
+    block: "{{ ufw_user6_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM USER6 RULES"
+    insertbefore: "COMMIT"
+  when: ufw_user6_rules_custom | length > 0
+  notify: "reload ufw"
+
+- name: Enable UFW if not already enabled
+  ansible.builtin.ufw:
+    state: enabled
+  when: ufw_enabled and not ufw_currently_enabled
+  notify: "enable ufw"
+
+- name: Reload UFW if rules changed
+  ansible.builtin.ufw:
+    state: reloaded
+  when:
+    - ufw_enabled
+    - ufw_currently_enabled
+    - all_rules_result.changed | default(false)

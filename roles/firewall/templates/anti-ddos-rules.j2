@@ -1,0 +1,37 @@
+# BEGIN UFW ANTI-DDOS PROTECTION
+*filter
+
+# Protection contre les attaques SYN flood
+:ufw-ddos-protection - [0:0]
+
+# Limiter les nouvelles connexions TCP (protection SYN flood)
+-A ufw-before-input -p tcp --syn -m limit --limit {{ ufw_ddos_syn_limit | default('25/minute') }} --limit-burst {{ ufw_ddos_syn_burst | default('20') }} -j ACCEPT
+-A ufw-before-input -p tcp --syn -j DROP
+
+# Protection contre les scans de ports
+-A ufw-before-input -p tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j DROP
+-A ufw-before-input -p tcp --tcp-flags FIN,SYN FIN,SYN -j DROP
+-A ufw-before-input -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+-A ufw-before-input -p tcp --tcp-flags FIN,RST FIN,RST -j DROP
+-A ufw-before-input -p tcp --tcp-flags FIN,ACK FIN -j DROP
+-A ufw-before-input -p tcp --tcp-flags ACK,URG URG -j DROP
+
+# Protection contre les attaques ICMP flood (ping flood)
+-A ufw-before-input -p icmp --icmp-type echo-request -m limit --limit {{ ufw_ddos_icmp_limit | default('1/second') }} --limit-burst {{ ufw_ddos_icmp_burst | default('2') }} -j ACCEPT
+-A ufw-before-input -p icmp --icmp-type echo-request -j DROP
+
+# Protection contre les attaques UDP flood
+-A ufw-before-input -p udp -m limit --limit {{ ufw_ddos_udp_limit | default('50/minute') }} --limit-burst {{ ufw_ddos_udp_burst | default('20') }} -j ACCEPT
+
+# Limiter les connexions simultanées par IP (protection contre les connexions massives)
+-A ufw-before-input -p tcp -m connlimit --connlimit-above {{ ufw_ddos_conn_limit | default('20') }} -j REJECT --reject-with tcp-reset
+
+# Protection contre les attaques de fragmentation IP
+-A ufw-before-input -f -j DROP
+
+# Bloquer les paquets avec des options IP invalides
+-A ufw-before-input -p tcp --tcp-option 64 -j DROP
+-A ufw-before-input -p tcp --tcp-option 128 -j DROP
+
+COMMIT
+# END UFW ANTI-DDOS PROTECTION

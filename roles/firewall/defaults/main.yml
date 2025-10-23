@@ -1,0 +1,67 @@
+---
+# UFW firewall configuration
+
+# Enable UFW firewall
+ufw_enabled: true
+
+# Default policies
+ufw_default_incoming_policy: "deny"
+ufw_default_outgoing_policy: "allow"
+ufw_default_forward_policy: "deny"
+
+# Logging level (off, low, medium, high, full)
+ufw_logging: "low"
+
+# Docker integration
+ufw_docker_enabled: false
+
+# Anti-DDoS protection
+ufw_ddos_enabled: false
+
+# Anti-DDoS configuration limits
+ufw_ddos_syn_limit: "25/minute"      # Limite des connexions SYN par minute
+ufw_ddos_syn_burst: "20"             # Burst autorisé pour les connexions SYN
+ufw_ddos_icmp_limit: "1/second"      # Limite des pings ICMP par seconde
+ufw_ddos_icmp_burst: "2"             # Burst autorisé pour les pings ICMP
+ufw_ddos_udp_limit: "50/minute"      # Limite des paquets UDP par minute
+ufw_ddos_udp_burst: "20"             # Burst autorisé pour les paquets UDP
+ufw_ddos_conn_limit: "20"            # Nombre maximum de connexions simultanées par IP
+
+# Whitelisted incoming ports (base configuration)
+ufw_whitelisted_in_ports_base: []
+# Example:
+# ufw_whitelisted_in_ports_base:
+#   - { to_port: 22, proto: tcp, from_ip: "192.168.1.0/24" }
+#   - { to_port: 80, proto: tcp }  # Allow from any IP
+#   - { to_port: 443 }             # Allow any protocol
+
+# Additional whitelisted incoming ports (for environment-specific overrides)
+ufw_whitelisted_in_ports_extra: []
+
+# Blacklisted IPs
+ufw_blacklisted_ips: []
+# Example:
+# ufw_blacklisted_ips:
+#   - "192.168.1.100"
+#   - "10.0.0.50"
+
+# Custom rules for after.rules
+ufw_after_rules_custom: ""
+
+# Custom rules for before.rules  
+ufw_before_rules_custom: ""
+
+# Custom rules for user.rules
+ufw_user_rules_custom: ""
+
+# Custom rules for after6.rules
+ufw_after6_rules_custom: ""
+
+# Custom rules for before6.rules
+ufw_before6_rules_custom: ""
+
+# Custom rules for user6.rules
+ufw_user6_rules_custom: ""
+
+# Combined whitelisted ports (computed internally)
+ufw_all_whitelisted_ports: "{{ ufw_whitelisted_in_ports_base + ufw_whitelisted_in_ports_extra }}"

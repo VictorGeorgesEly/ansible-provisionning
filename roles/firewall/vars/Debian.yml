@@ -1,0 +1,19 @@
+---
+# Debian-specific variables for UFW firewall
+
+# Package name for UFW
+ufw_package: "ufw"
+
+# UFW service name
+ufw_service: "ufw"
+
+# UFW configuration directory
+ufw_config_dir: "/etc/ufw"
+
+# UFW rules files
+ufw_after_rules: "/etc/ufw/after.rules"
+ufw_before_rules: "/etc/ufw/before.rules"
+ufw_user_rules: "/etc/ufw/user.rules"
+ufw_after6_rules: "/etc/ufw/after6.rules"
+ufw_before6_rules: "/etc/ufw/before6.rules"
+ufw_user6_rules: "/etc/ufw/user6.rules"

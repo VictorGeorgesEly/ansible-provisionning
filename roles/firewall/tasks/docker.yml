@@ -1,0 +1,48 @@
+---
+- name: Check if Docker rules already exist in after.rules
+  ansible.builtin.lineinfile:
+    path: "{{ ufw_after_rules }}"
+    line: "# BEGIN UFW AND DOCKER"
+    state: absent
+  check_mode: true
+  register: docker_rules_check
+  changed_when: false
+
+- name: Backup original after.rules
+  ansible.builtin.copy:
+    src: "{{ ufw_after_rules }}"
+    dest: "{{ ufw_after_rules }}.backup"
+    remote_src: true
+    backup: true
+  when: not docker_rules_check.found
+
+- name: Add Docker rules to after.rules
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_after_rules }}"
+    block: "{{ lookup('template', 'docker-rules.j2') }}"
+    marker: "# {mark} ANSIBLE MANAGED DOCKER RULES"
+    insertbefore: "COMMIT"
+  when: not docker_rules_check.found
+  notify: "reload ufw"
+
+- name: Apply custom after.rules content
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_after_rules }}"
+    block: "{{ ufw_after_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM AFTER RULES"
+    insertbefore: "# BEGIN ANSIBLE MANAGED DOCKER RULES"
+  when:
+    - ufw_after_rules_custom | length > 0
+    - not docker_rules_check.found
+  notify: "reload ufw"
+
+- name: Apply custom after.rules content (no Docker)
+  ansible.builtin.blockinfile:
+    path: "{{ ufw_after_rules }}"
+    block: "{{ ufw_after_rules_custom }}"
+    marker: "# {mark} ANSIBLE MANAGED CUSTOM AFTER RULES"
+    insertbefore: "COMMIT"
+  when:
+    - ufw_after_rules_custom | length > 0
+    - docker_rules_check.found
+  notify: "reload ufw"

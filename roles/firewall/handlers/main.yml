@@ -1,0 +1,15 @@
+---
+- name: reload ufw
+  ansible.builtin.command: ufw --force reload
+  listen: "reload ufw"
+
+- name: restart ufw
+  ansible.builtin.systemd:
+    name: ufw
+    state: restarted
+  listen: "restart ufw"
+
+- name: enable ufw
+  ansible.builtin.ufw:
+    state: enabled
+  listen: "enable ufw"

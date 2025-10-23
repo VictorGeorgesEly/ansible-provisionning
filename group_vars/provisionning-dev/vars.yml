@@ -45,3 +45,28 @@ fail2ban_custom_jails: {}
 fail2ban_bantime: "1h"
 fail2ban_findtime: "10m"
 fail2ban_maxretry: 10
+
+# Firewall UFW configuration for development/test environment
+ufw_enabled: true
+ufw_docker_enabled: true
+ufw_ddos_enabled: true
+ufw_logging: "low"
+
+# Anti-DDoS protection settings for development
+ufw_ddos_syn_limit: "30/minute"
+ufw_ddos_syn_burst: "25"
+ufw_ddos_icmp_limit: "2/second"
+ufw_ddos_icmp_burst: "3"
+ufw_ddos_udp_limit: "60/minute"
+ufw_ddos_udp_burst: "25"
+ufw_ddos_conn_limit: "25"
+
+# Whitelisted ports for development
+ufw_whitelisted_in_ports_base:
+  - { to_port: 22, proto: tcp, from_ip: "192.168.0.0/16" }  # SSH depuis réseau local
+  - { to_port: 80, proto: tcp }                             # HTTP
+  - { to_port: 443, proto: tcp }                            # HTTPS
+  - { to_port: 9090, proto: tcp, from_ip: "127.0.0.1" }     # Prometheus local seulement
+
+# IPs à bloquer pour les tests
+ufw_blacklisted_ips: []

@@ -1,0 +1,20 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Install UFW package
+  ansible.builtin.package:
+    name: "{{ ufw_package }}"
+    state: present
+    update_cache: true
+  register: ufw_install_result
+
+- name: Check if UFW is already enabled
+  ansible.builtin.command: ufw status
+  register: ufw_status_check
+  changed_when: false
+  failed_when: false
+
+- name: Set UFW enabled fact
+  ansible.builtin.set_fact:
+    ufw_currently_enabled: "{{ 'Status: active' in ufw_status_check.stdout }}"
